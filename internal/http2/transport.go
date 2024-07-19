@@ -460,7 +460,7 @@ func (t *Transport) RoundTripOpt(req *http.Request, opt RoundTripOpt) (*http.Res
 		return cc.RoundTrip(req)
 	}
 	for retry := 0; ; retry++ {
-		cc, err = t.connPool().GetClientConn(req, addr, true)
+		cc, err = t.connPool().GetClientConn(req, addr, false)
 		if err != nil {
 			t.vlogf("http2: Transport failed to get client conn for %s: %v", addr, err)
 			return nil, err
