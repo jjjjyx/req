@@ -143,6 +143,7 @@ type Transport struct {
 
 	ConnectionFlow uint32
 	HeaderPriority http2.PriorityParam
+	HeaderFlags    uint8
 	PriorityFrames []http2.PriorityFrame
 
 	connPoolOnce  sync.Once
@@ -471,7 +472,7 @@ func (t *Transport) RoundTripOpt(req *http.Request, opt RoundTripOpt) (*http.Res
 		return cc.RoundTrip(req)
 	}
 	for retry := 0; ; retry++ {
-		cc, err = t.connPool().GetClientConn(req, addr, false)
+		cc, err = t.connPool().GetClientConn(req, addr, true)
 		if err != nil {
 			t.vlogf("http2: Transport failed to get client conn for %s: %v", addr, err)
 			return nil, err
@@ -1619,6 +1620,7 @@ func (cc *ClientConn) writeHeaders(streamID uint32, endStream bool, maxFrameSize
 				BlockFragment: chunk,
 				EndStream:     endStream,
 				EndHeaders:    endHeaders,
+				ForceFlags:    cc.t.HeaderFlags,
 				Priority:      cc.t.HeaderPriority,
 			})
 			first = false

@@ -435,6 +435,12 @@ func (t *Transport) SetHTTP2HeaderPriority(priority http2.PriorityParam) *Transp
 	return t
 }
 
+// SetHTTP2HeaderFlags set the header flags param.
+func (t *Transport) SetHTTP2HeaderFlags(flags uint8) *Transport {
+	t.t2.HeaderFlags = flags
+	return t
+}
+
 // SetHTTP2PriorityFrames set the ordered http2 priority frames.
 func (t *Transport) SetHTTP2PriorityFrames(frames ...http2.PriorityFrame) *Transport {
 	t.t2.PriorityFrames = frames
@@ -781,6 +787,7 @@ func (t *Transport) Clone() *Transport {
 			ConnectionFlow:             t.t2.ConnectionFlow,
 			Settings:                   cloneSlice(t.t2.Settings),
 			HeaderPriority:             t.t2.HeaderPriority,
+			HeaderFlags:                t.t2.HeaderFlags,
 			PriorityFrames:             cloneSlice(t.t2.PriorityFrames),
 		}
 	}
