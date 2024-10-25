@@ -64,6 +64,8 @@ const (
 	// defaultMaxConcurrentStreams is a connections default maxConcurrentStreams
 	// if the server doesn't include one in its initial SETTINGS frame.
 	defaultMaxConcurrentStreams = 1000
+
+	RequestStreamID = "__request_stream_id__"
 )
 
 // Transport is an HTTP/2 Transport.
@@ -1353,7 +1355,15 @@ func (cs *clientStream) writeRequest(req *http.Request, streamf func(*clientStre
 		<-cc.reqHeaderMu
 		return err
 	}
-	cc.addStreamLocked(cs) // assigns stream ID
+	var nid = cc.nextStreamID
+	if sid := req.Header[RequestStreamID]; len(sid) > 0 {
+		if parseUint, e := strconv.ParseUint(sid[0], 10, 32); e == nil {
+			nid = uint32(parseUint)
+		}
+		delete(req.Header, RequestStreamID)
+	}
+
+	cc.addStreamLocked(cs, nid) // assigns stream ID
 	if isConnectionCloseRequest(req) {
 		cc.doNotReuse = true
 	}
@@ -2201,12 +2211,19 @@ type resAndError struct {
 }
 
 // requires cc.mu be held.
-func (cc *ClientConn) addStreamLocked(cs *clientStream) {
+func (cc *ClientConn) addStreamLocked(cs *clientStream, id uint32) {
 	cs.flow.add(int32(cc.initialWindowSize))
 	cs.flow.setConnFlow(&cc.flow)
 	cs.inflow.init(transportDefaultStreamFlow)
-	cs.ID = cc.nextStreamID
-	cc.nextStreamID += 2
+
+	if id > 0 {
+		cs.ID = id
+		cc.nextStreamID = id + 2
+	} else {
+		cs.ID = cc.nextStreamID
+		cc.nextStreamID += 2
+	}
+
 	cc.streams[cs.ID] = cs
 	if cs.ID == 0 {
 		panic("assigned stream ID 0")
