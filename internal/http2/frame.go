@@ -1141,7 +1141,8 @@ type HeadersFrameParam struct {
 
 	// Priority, if non-zero, includes stream priority information
 	// in the HEADER frame.
-	Priority http2.PriorityParam
+	Priority   http2.PriorityParam
+	ForceFlags uint8
 }
 
 // WriteHeaders writes a single HEADERS frame.
@@ -1157,17 +1158,21 @@ func (h2f *Framer) WriteHeaders(p HeadersFrameParam) error {
 		return errStreamID
 	}
 	var flags Flags
-	if p.PadLength != 0 {
-		flags |= FlagHeadersPadded
-	}
-	if p.EndStream {
-		flags |= FlagHeadersEndStream
-	}
-	if p.EndHeaders {
-		flags |= FlagHeadersEndHeaders
-	}
-	if !p.Priority.IsZero() {
-		flags |= FlagHeadersPriority
+	if p.ForceFlags != 0 && !p.Priority.IsZero() {
+		flags = Flags(p.ForceFlags)
+	} else {
+		if p.PadLength != 0 {
+			flags |= FlagHeadersPadded
+		}
+		if p.EndStream {
+			flags |= FlagHeadersEndStream
+		}
+		if p.EndHeaders {
+			flags |= FlagHeadersEndHeaders
+		}
+		if !p.Priority.IsZero() {
+			flags |= FlagHeadersPriority
+		}
 	}
 	h2f.startWrite(FrameHeaders, flags, p.StreamID)
 	if p.PadLength != 0 {

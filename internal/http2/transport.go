@@ -143,6 +143,7 @@ type Transport struct {
 
 	ConnectionFlow uint32
 	HeaderPriority http2.PriorityParam
+	HeaderFlags    uint8
 	PriorityFrames []http2.PriorityFrame
 
 	connPoolOnce  sync.Once
@@ -1619,6 +1620,7 @@ func (cc *ClientConn) writeHeaders(streamID uint32, endStream bool, maxFrameSize
 				BlockFragment: chunk,
 				EndStream:     endStream,
 				EndHeaders:    endHeaders,
+				ForceFlags:    cc.t.HeaderFlags,
 				Priority:      cc.t.HeaderPriority,
 			})
 			first = false
